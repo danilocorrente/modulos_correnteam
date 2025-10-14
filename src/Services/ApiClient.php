@@ -3,65 +3,117 @@
 namespace Danilocorrente\ModulosCorrenteam\Services;
 
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
 class ApiClient
 {
     protected string $baseUrl;
     protected ?string $token;
+    protected bool $hasLaravel;
 
     public function __construct()
     {
-        // Se tiver CORRENTEAM_LOCAL=true → usa o endpoint local
-        $isLocal = filter_var(config('modulos_correnteam.local'), FILTER_VALIDATE_BOOLEAN);
+        $this->hasLaravel = function_exists('config');
+
+        if ($this->hasLaravel) {
+            $isLocal = filter_var(config('modulos_correnteam.local'), FILTER_VALIDATE_BOOLEAN);
+            $this->token = config('modulos_correnteam.token');
+        } else {
+            // Fallback para rodar fora do Laravel
+            $dotenv = __DIR__ . '/../../../.env';
+            $isLocal = false;
+            $this->token = null;
+
+            if (file_exists($dotenv)) {
+                $lines = file($dotenv, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+                foreach ($lines as $line) {
+                    if (str_starts_with($line, 'CORRENTEAM_API_TOKEN=')) {
+                        $this->token = trim(explode('=', $line, 2)[1]);
+                    }
+                    if (str_starts_with($line, 'CORRENTEAM_LOCAL=')) {
+                        $isLocal = trim(explode('=', $line, 2)[1]) === 'true';
+                    }
+                }
+            }
+        }
 
         $this->baseUrl = $isLocal
             ? 'http://correnteam.test/api'
             : 'https://correnteam.com.br/api';
 
-        $this->token = config('modulos_correnteam.token');
-    }
-
-    protected function url(string $endpoint): string
-    {
-        return rtrim($this->baseUrl, '/') . '/' . ltrim($endpoint, '/');
+        // ✅ Garantir que o Guzzle existe
+        if (!$this->hasLaravel && !class_exists('\GuzzleHttp\Client')) {
+            throw new RuntimeException("Guzzle não encontrado. Rode: composer require guzzlehttp/guzzle");
+        }
     }
 
     /**
-     * Envia arquivo pro endpoint OCR CNH.
-     * 
-     * @param string|UploadedFile $file
-     * @return array
+     * Faz upload da CNH para o endpoint OCR.
      */
     public function ocrCnh($file): array
     {
         return $this->postFile('ocr/cnh', $file);
     }
 
+    /**
+     * Faz upload de arquivo multipart/form-data.
+     */
     protected function postFile(string $endpoint, $file, string $fieldName = 'file'): array
     {
         if ($file instanceof UploadedFile) {
             $path = $file->getRealPath();
             $filename = $file->getClientOriginalName();
-            $mime = $file->getClientMimeType();
         } else {
             $path = (string) $file;
             if (!file_exists($path)) {
                 throw new RuntimeException("Arquivo não encontrado: {$path}");
             }
             $filename = basename($path);
-            $mime = mime_content_type($path) ?: 'application/octet-stream';
         }
 
-        $response = Http::withHeaders([
+        $url = rtrim($this->baseUrl, '/') . '/' . ltrim($endpoint, '/');
+
+        // Laravel presente → usa Facade
+        if ($this->hasLaravel) {
+            $response = \Illuminate\Support\Facades\Http::withHeaders([
+                    'Authorization' => $this->token,
+                    'Accept' => 'application/json',
+                ])
+                ->attach($fieldName, fopen($path, 'r'), $filename)
+                ->post($url)
+                ->throw()
+                ->json();
+
+            return $response;
+        }
+
+        // Fora do Laravel → usa Guzzle
+        $client = new \GuzzleHttp\Client([
+            'headers' => [
                 'Authorization' => $this->token,
                 'Accept' => 'application/json',
-            ])
-            ->attach($fieldName, fopen($path, 'r'), $filename)
-            ->post($this->url($endpoint))
-            ->throw();
+            ],
+            'http_errors' => false,
+            'timeout' => 60,
+        ]);
 
-        return $response->json();
+        $response = $client->post($url, [
+            'multipart' => [
+                [
+                    'name'     => $fieldName,
+                    'contents' => fopen($path, 'r'),
+                    'filename' => $filename,
+                ],
+            ],
+        ]);
+
+        $body = (string) $response->getBody();
+        $decoded = json_decode($body, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new RuntimeException("Erro ao decodificar resposta: {$body}");
+        }
+
+        return $decoded;
     }
 }
