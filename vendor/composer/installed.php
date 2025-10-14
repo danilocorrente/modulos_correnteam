@@ -3,7 +3,7 @@
         'name' => 'danilocorrente/modulos_correnteam',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '59c6e68c50bfd68c690fbe087fccc0a9af160721',
+        'reference' => '68021be02263fa081b17d4bd9a7c07b8c309bf55',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -13,7 +13,7 @@
         'danilocorrente/modulos_correnteam' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '59c6e68c50bfd68c690fbe087fccc0a9af160721',
+            'reference' => '68021be02263fa081b17d4bd9a7c07b8c309bf55',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
