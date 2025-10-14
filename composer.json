@@ -1,23 +1,31 @@
 {
-  "name": "danilocorrente/modulos_correnteam",
-  "description": "Pacote para centralizar chamadas de endpoints e módulos do Correnteam",
-  "type": "library",
-  "autoload": {
-    "psr-4": {
-      "Danilocorrente\\ModulosCorrenteam\\": "src/"
+    "name": "danilocorrente/modulos_correnteam",
+    "description": "Pacote Laravel/PHP para comunicação com os módulos Correnteam (OCR, etc.)",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Danilo Corrente",
+            "email": "teuemail@dominio.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Danilocorrente\\ModulosCorrenteam\\": "src/"
+        }
+    },
+    "require": {
+        "php": "^8.0",
+        "guzzlehttp/guzzle": "^7.0"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Danilocorrente\\ModulosCorrenteam\\ModulosCorrenteamServiceProvider"
+            ],
+            "aliases": {
+                "ModulosCorrenteam": "Danilocorrente\\ModulosCorrenteam\\Facades\\ModulosCorrenteam"
+            }
+        }
     }
-  },
-  "extra": {
-    "laravel": {
-      "providers": [
-        "Danilocorrente\\ModulosCorrenteam\\ModulosCorrenteamServiceProvider"
-      ],
-      "aliases": {
-        "ModulosCorrenteam": "Danilocorrente\\ModulosCorrenteam\\Facades\\ModulosCorrenteam"
-      }
-    }
-  },
-  "require": {
-    "guzzlehttp/guzzle": "^7.10"
-  }
 }
