@@ -76,7 +76,7 @@ class ApiClient
         // Laravel presente → usa Facade
         if ($this->hasLaravel) {
             $response = \Illuminate\Support\Facades\Http::withHeaders([
-                    'Authorization' => $this->token,
+                    'Authorization' => 'Bearer ' . $this->token,
                     'Accept' => 'application/json',
                 ])
                 ->attach($fieldName, fopen($path, 'r'), $filename)
@@ -85,7 +85,8 @@ class ApiClient
                 ->json();
 
             return $response;
-        }
+        } else {
+            
 
         // Fora do Laravel → usa Guzzle
         $client = new \GuzzleHttp\Client([
@@ -106,6 +107,7 @@ class ApiClient
                 ],
             ],
         ]);
+        }
 
         $body = (string) $response->getBody();
         $decoded = json_decode($body, true);
