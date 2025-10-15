@@ -27,5 +27,7 @@
                 "ModulosCorrenteam": "Danilocorrente\\ModulosCorrenteam\\Facades\\ModulosCorrenteam"
             }
         }
-    }
+    },
+    "minimum-stability": "stable",
+"prefer-stable": true
 }
